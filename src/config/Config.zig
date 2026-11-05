@@ -3456,6 +3456,18 @@ keybind: Keybinds = .{},
 /// Changing this option at runtime only applies to new windows.
 @"macos-titlebar-style": MacTitlebarStyle = .transparent,
 
+/// Root directory for the macOS project home tab. Each immediate child directory
+/// is shown as a group, and matching directories within it are project entries.
+/// If this is unset or the directory does not exist, the project home button
+/// is hidden.
+///
+/// The path may be absolute or begin with `~/`.
+@"macos-project-home-directory": ?[:0]const u8 = null,
+
+/// Comma-separated directory name suffixes shown in the macOS project home tab.
+/// The default is `-api,-admin,-admin-api`.
+@"macos-project-home-suffixes": ?[:0]const u8 = null,
+
 /// Whether the proxy icon in the macOS titlebar is visible. The proxy icon
 /// is the icon that represents the folder of the current working directory.
 /// You can see this very clearly in the macOS built-in Terminal.app
@@ -10842,6 +10854,26 @@ test "clone preserves conditional set" {
     defer clone1.deinit();
 
     try testing.expect(clone1._conditional_set.contains(.theme));
+}
+
+test "macos project home config" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    var cfg = try Config.default(alloc);
+    defer cfg.deinit();
+    try testing.expect(cfg.@"macos-project-home-directory" == null);
+    try testing.expect(cfg.@"macos-project-home-suffixes" == null);
+
+    var it: TestIterator = .{ .data = &.{
+        "--macos-project-home-directory=/tmp/projects",
+        "--macos-project-home-suffixes=-web,-api",
+    } };
+    try cfg.loadIter(alloc, &it);
+    try cfg.finalize();
+
+    try testing.expectEqualStrings("/tmp/projects", cfg.@"macos-project-home-directory".?);
+    try testing.expectEqualStrings("-web,-api", cfg.@"macos-project-home-suffixes".?);
 }
 
 test "working-directory expands tilde" {

@@ -849,6 +849,8 @@ class AppDelegate: NSObject,
             self.syncMenuShortcuts(config)
         }
         TerminalController.all.forEach { $0.relabelTabs() }
+        NSApp.windows.compactMap { $0 as? TerminalWindow }.forEach { $0.refreshProjectHomeAccessory() }
+        ProjectHomeController.refreshAll()
 
         // Update our badge since config can change what we show.
         syncDockBadge()

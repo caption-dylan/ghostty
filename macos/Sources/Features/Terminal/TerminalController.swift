@@ -597,8 +597,9 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         // otherwise the accessory view doesn't matter.
         tabListenForFrame = window?.tabbedWindows?.count ?? 0 > 1
 
-        if let windows = window?.tabbedWindows as? [TerminalWindow] {
+        if let windows = window?.tabbedWindows {
             for (tab, window) in zip(1..., windows) {
+                guard let window = window as? TerminalWindow else { continue }
                 // We need to clear any windows beyond this because they have had
                 // a keyEquivalent set previously.
                 guard tab <= 9 else {

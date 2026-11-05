@@ -25,6 +25,9 @@ class TerminalWindow: NSWindow {
     /// Update notification UI in titlebar
     private let updateAccessory = NSTitlebarAccessoryViewController()
 
+    /// A fixed launcher beside the native tabs when project home is configured.
+    private let projectHomeAccessory = NSTitlebarAccessoryViewController()
+
     /// Visual indicator that mirrors the selected tab color.
     private lazy var tabColorIndicator: NSHostingView<TabColorIndicatorView> = {
         let view = NSHostingView(rootView: TabColorIndicatorView(tabColor: tabColor))
@@ -134,6 +137,18 @@ class TerminalWindow: NSWindow {
         // Create our reset zoom titlebar accessory. We have to have a title
         // to do this or AppKit triggers an assertion.
         if styleMask.contains(.titled) {
+            let homeButton = NSButton(
+                image: NSImage(systemSymbolName: "house", accessibilityDescription: "Projects") ?? NSImage(),
+                target: self,
+                action: #selector(showProjectHome(_:))
+            )
+            homeButton.isBordered = false
+            homeButton.toolTip = "Projects"
+            homeButton.frame = NSRect(x: 0, y: 0, width: 32, height: 28)
+            projectHomeAccessory.layoutAttribute = .left
+            projectHomeAccessory.view = homeButton
+            refreshProjectHomeAccessory()
+
             resetZoomAccessory.layoutAttribute = .right
             resetZoomAccessory.view = NSHostingView(rootView: ResetZoomAccessoryView(
                 viewModel: viewModel,
@@ -200,7 +215,21 @@ class TerminalWindow: NSWindow {
 
     override func becomeKey() {
         super.becomeKey()
+        refreshProjectHomeAccessory()
         resetZoomTabButton.contentTintColor = .controlAccentColor
+    }
+
+    func refreshProjectHomeAccessory() {
+        let currentIndex = titlebarAccessoryViewControllers.firstIndex(of: projectHomeAccessory)
+        if ProjectHome.configuration() != nil, styleMask.contains(.titled) {
+            if currentIndex == nil { addTitlebarAccessoryViewController(projectHomeAccessory) }
+        } else if let currentIndex {
+            removeTitlebarAccessoryViewController(at: currentIndex)
+        }
+    }
+
+    @objc private func showProjectHome(_ sender: Any?) {
+        ProjectHomeController.show(from: self)
     }
 
     override func resignKey() {
